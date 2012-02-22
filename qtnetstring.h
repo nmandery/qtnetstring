@@ -6,6 +6,12 @@
 #include "QVariant"
 
 
+/**
+ * implementation of the "tagged netstring" searialization
+ * format
+ *
+ * http://tnetstrings.org
+ */
 namespace QTNetString {
 
     QByteArray dump(const QVariant &value, bool &ok);

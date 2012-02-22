@@ -20,6 +20,9 @@ int main(int argc, char *argv[])
     map["pi"] = QVariant(3.14);
     map["three"] = QVariant("Das ist ein test");
     map["seven"] = QVariant('u');
+    map["text"] = QVariant("Finally, the general rule is senders should have to completely specify the size of what they send "
+                            "and receivers should be ready to reject it. If you allow arbitrary streaming then your servers will "
+                            "suffer attacks that eat your resources. ");
     map["sadn"] = QVariant();
     map["time"] = QVariant(QDateTime::currentDateTime());
 
