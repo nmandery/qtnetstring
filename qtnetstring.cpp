@@ -362,22 +362,25 @@ parse_map(const QByteArray &payload, QVariant &value, int pl_start, int pl_size,
     while (ok && (this_end_pos < (pl_start+pl_size-1))) {
         QVariant map_key = parse_payload(payload, this_end_pos, pl_size+pl_start-1,
                 this_end_pos, ok);
-        if (ok) {
-            if (map_key.type() == QVariant::ByteArray) {
-
-                QVariant map_value = parse_payload(payload, this_end_pos,
-                            pl_size+pl_start-1, this_end_pos, ok);
-                if (ok) {
-                    // qvariant maps only allow QStrings as keys. Need to 
-                    // cast the QByteArray to String
-                    map[map_key.toString()] =  map_value;
-                }
-            }
-            else {
-                qDebug() << "tns map keys are only allowed to be strings";
-                ok = false;
-            }
+        if (!ok) {
+            break;
         }
+
+        if (map_key.type() != QVariant::ByteArray) {
+            qDebug() << "tns map keys are only allowed to be strings";
+            ok = false;
+            break;
+        }
+
+        QVariant map_value = parse_payload(payload, this_end_pos,
+                pl_size+pl_start-1, this_end_pos, ok);
+        if (!ok) {
+            break;
+        }
+
+        // qvariant maps only allow QStrings as keys. Need to
+        // cast the QByteArray to String
+        map[map_key.toString()] =  map_value;
     }
 
     if (ok) {
