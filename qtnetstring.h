@@ -35,7 +35,7 @@ namespace QTNetString {
      * returns QVariant::Invalid on error and sets ok
      * to false.
      */
-    QVariant parse(const QByteArray &payload, bool &ok);
+    QVariant parse(const QByteArray &tnetstring, bool &ok);
 }
 
 
