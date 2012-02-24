@@ -108,6 +108,21 @@ dump_int(const QVariant &value, QByteArray & tns_value, TnsType & tns_type, bool
     }
 }
 
+
+/**
+ * dump QChar as QStrings
+ */
+inline void
+dump_char(const QVariant &value, QByteArray & tns_value, TnsType & tns_type, bool &ok)
+{
+    ok = (value.type() == QVariant::Char) && (value.canConvert(QVariant::String));
+    if (ok) {
+        tns_value = value.toString().toAscii();
+        tns_type = TNS_STRING;
+    }
+}
+
+
 inline void
 dump_string(const QVariant &value, QByteArray & tns_value, TnsType & tns_type, bool &ok)
 {
@@ -223,6 +238,8 @@ QTNetString::dump(const QVariant &value, bool &ok)
                 dump_int(value, tns_value, tns_type, ok);
                 break;
             case QVariant::Char:
+                dump_char(value, tns_value, tns_type, ok);
+                break;
             case QVariant::String:
             case QVariant::ByteArray:
                 dump_string(value, tns_value, tns_type, ok);

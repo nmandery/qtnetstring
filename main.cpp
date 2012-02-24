@@ -19,7 +19,7 @@ int main(int argc, char *argv[])
     map["one"] = QVariant(1);
     map["pi"] = QVariant(3.14);
     map["test_german"] = QVariant("Das ist ein test");
-    map["character"] = QVariant('u');
+    map["character"] = QVariant(QChar('u'));
     map["longtext"] = QVariant("Finally, the general rule is senders should "
                             "have to completely specify the size of what they send "
                             "and receivers should be ready to reject it. If you allow "
