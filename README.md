@@ -1,4 +1,4 @@
-A [QT](http://qt.nokia.com) implementation of the [TNetString](http://tnetstrings.org) serialization format
+A [Qt](http://qt.nokia.com) implementation of the [TNetString](http://tnetstrings.org) serialization format
 -----------------------------------------------------------------------------------------------------------
 
 For the documentation of the available functions see
