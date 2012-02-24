@@ -72,7 +72,8 @@
  * Arbitrary Dict Keys
  *      Keys must be strings only.
  * Floats Undefined
- *      Floats are encoded with X.Y format, with no precision, accuracy, or other assurances.
+ *      Floats are encoded with X.Y format, with no precision, accuracy, or other
+ *      assurances.
  *
  * These restrictions exist to make the protocol reliable for anyone who uses it and to
  * act as a constraint on the design to keep it simple.
@@ -82,9 +83,13 @@
 
 using namespace QTNetString;
 
+/* neccessary prototypes */
+QVariant parse_payload(const QByteArray &payload, int start_pos, int end_pos,
+            int &this_end_pos, bool &ok);
+
 enum TnsType {
     TNS_BOOL        = '!',
-    TNS_DICT        = '}',
+    TNS_MAP        = '}',
     TNS_FLOAT       = '^',
     TNS_INT         = '#',
     TNS_LIST        = ']',
@@ -156,7 +161,7 @@ dump_map(const QVariant &value, QByteArray & tns_value, TnsType & tns_type, bool
             }
             ++iter;
         }
-        tns_type = TNS_DICT;
+        tns_type = TNS_MAP;
     }
 }
 
@@ -214,6 +219,7 @@ QTNetString::dump(const QVariant &value, bool &ok)
             case QVariant::Int:
             case QVariant::UInt:
             case QVariant::ULongLong:
+            case QVariant::LongLong:
                 dump_int(value, tns_value, tns_type, ok);
                 break;
             case QVariant::Char:
@@ -249,3 +255,220 @@ QTNetString::dump(const QVariant &value, bool &ok)
     return tns;
 }
 
+
+inline void
+parse_bool(const QByteArray &payload, QVariant &value, int pl_start, int pl_size)
+{
+    QByteArray pl_data = payload.mid(pl_start, pl_size);
+    value.setValue(pl_data == "true");
+}
+
+
+/**
+ * TODO: cast into QVariant of appropriate size
+ */
+inline void
+parse_int(const QByteArray &payload, QVariant &value, int pl_start, int pl_size, bool & ok)
+{
+    QByteArray pl_data = payload.mid(pl_start, pl_size);
+    value.setValue(pl_data.toInt(&ok));
+    if (!ok) {
+        qDebug() << "could not convert to int";
+    }
+}
+
+inline void
+parse_string(const QByteArray &payload, QVariant &value, int pl_start, int pl_size)
+{
+    QByteArray pl_data = payload.mid(pl_start, pl_size);
+    value.setValue(pl_data);
+}
+
+
+inline void
+parse_float(const QByteArray &payload, QVariant &value, int pl_start, int pl_size, bool & ok)
+{
+    QByteArray pl_data = payload.mid(pl_start, pl_size);
+    value.setValue(pl_data.toDouble(&ok));
+    if (!ok) {
+        qDebug() << "could not convert to float";
+    }
+}
+
+/**
+ * parse the contents of a list
+ */
+inline void
+parse_list(const QByteArray &payload, QVariant &value, int pl_start, int pl_size, bool & ok)
+{
+    QList<QVariant> list;
+
+    // set empty list if size is 0
+    if (pl_size == 0) {
+        value.setValue(list);
+        return;
+    }
+
+    int this_end_pos = pl_start;
+    while (ok && (this_end_pos < (pl_start+pl_size-1))) {
+        QVariant list_value = parse_payload(payload, this_end_pos, pl_size+pl_start-1,
+                    this_end_pos, ok);
+
+        if (!ok) {
+            qDebug() << "list element is not ok";
+            break;
+        }
+        list.append(list_value);
+    }
+
+    if (ok) {
+        value.setValue(list);
+    }
+}
+
+/**
+ * parse the contents of a map
+ */
+inline void
+parse_map(const QByteArray &payload, QVariant &value, int pl_start, int pl_size, bool & ok)
+{
+    QMap<QString, QVariant> map;
+
+    // set empty map if size is 0
+    if (pl_size == 0) {
+        value.setValue(map);
+        return;
+    }
+
+    int this_end_pos = pl_start;
+
+    while (ok && (this_end_pos < (pl_start+pl_size-1))) {
+        QVariant map_key = parse_payload(payload, this_end_pos, pl_size+pl_start-1,
+                this_end_pos, ok);
+        if (ok) {
+            if (map_key.type() == QVariant::ByteArray) {
+
+                QVariant map_value = parse_payload(payload, this_end_pos,
+                            pl_size+pl_start-1, this_end_pos, ok);
+                if (ok) {
+                    // qvariant maps only allow QStrings as keys. Need to 
+                    // cast the QByteArray to String
+                    map[map_key.toString()] =  map_value;
+                }
+            }
+            else {
+                qDebug() << "tns map keys are only allowed to be strings";
+                ok = false;
+            }
+        }
+    }
+
+    if (ok) {
+        value.setValue(map);
+    }
+}
+
+/**
+ *
+ * this_end_pos: last position of this value (= position of tns_type character)
+ */
+QVariant
+parse_payload(const QByteArray &payload, int start_pos, int end_pos, int &this_end_pos, bool &ok)
+{
+    QVariant value;
+
+    if (payload.size() <= 0) {
+        qDebug() << "tns payload is empty";
+        ok = false;
+        return value;
+    }
+
+    if ((start_pos > end_pos) || ((payload.size()-1) < end_pos)) {
+        qDebug() << "invalid positions/sizes";
+        ok = false;
+        return value;
+    }
+
+    int colon_pos = payload.indexOf(':', start_pos);
+    if ((colon_pos == -1) || (colon_pos > end_pos)) {
+        qDebug() << "no seperating colon found";
+        ok = false;
+        return value;
+    }
+
+    // convert the size to int;
+    QByteArray ba_size = payload.mid(start_pos, colon_pos-start_pos);
+    int pl_size = ba_size.toInt(&ok);
+    if (!ok) {
+        qDebug() << "invalid tns size: " <<ba_size;
+        ok = false;
+        return value;
+    }
+
+    int pl_start = colon_pos + 1;
+    int pl_end = pl_start + pl_size - 1;
+    if (pl_end >= end_pos) {
+        qDebug() << "tns specifies no type";
+        ok = false;
+        return value;
+    }
+
+    switch (payload.at(pl_end + 1)) {
+        case TNS_NULL:
+            if (pl_size != 0) {
+                qDebug() << "null values must have a size of 0";
+            }
+            // do not set any value
+            break;
+        case TNS_STRING:
+            parse_string(payload, value, pl_start, pl_size);
+            break;
+        case TNS_BOOL:
+            parse_bool(payload, value, pl_start, pl_size);
+            break;
+        case TNS_INT:
+            parse_int(payload, value, pl_start, pl_size, ok);
+            break;
+        case TNS_FLOAT:
+            parse_float(payload, value, pl_start, pl_size, ok);
+            break;
+        case TNS_MAP:
+            parse_map(payload, value, pl_start, pl_size, ok);
+            break;
+        case TNS_LIST:
+            parse_list(payload, value, pl_start, pl_size, ok);
+            break;
+        default:
+            qDebug() << "unknown tns type: " << payload.at(pl_end + 1);
+            ok = false;
+    }
+
+    // last position of this value ( = tns_type character)
+    this_end_pos = pl_start + pl_size + 1;
+    return value;
+}
+
+
+QVariant
+QTNetString::parse(const QByteArray &tnetstring, bool &ok)
+{
+    QVariant value;
+    ok = true;
+
+    if (tnetstring.size() > 0) {
+        int this_end_pos;
+        value = parse_payload(tnetstring, 0, tnetstring.size() - 1, this_end_pos, ok);
+
+        // reset to empty QVariant in case of an error to
+        // return type Invalid
+        if (!ok) {
+            value.clear();
+        }
+    }
+    else {
+        qDebug() << "tns is empty";
+        ok = false;
+    }
+
+    return value;
+}

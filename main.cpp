@@ -18,26 +18,38 @@ int main(int argc, char *argv[])
     QMap<QString, QVariant> map;
     map["one"] = QVariant(1);
     map["pi"] = QVariant(3.14);
-    map["three"] = QVariant("Das ist ein test");
-    map["seven"] = QVariant('u');
-    map["text"] = QVariant("Finally, the general rule is senders should have to completely specify the size of what they send "
-                            "and receivers should be ready to reject it. If you allow arbitrary streaming then your servers will "
+    map["test_german"] = QVariant("Das ist ein test");
+    map["character"] = QVariant('u');
+    map["longtext"] = QVariant("Finally, the general rule is senders should "
+                            "have to completely specify the size of what they send "
+                            "and receivers should be ready to reject it. If you allow "
+                            "arbitrary streaming then your servers will "
                             "suffer attacks that eat your resources. ");
-    map["sadn"] = QVariant();
+    map["nothing"] = QVariant();
     map["time"] = QVariant(QDateTime::currentDateTime());
 
     QList<QVariant> list;
-    list.append(QVariant("item1"));
-    map["items"] = list;
-
+    list.append(QVariant("cat"));
+    list.append(QVariant("dog"));
+    list.append(QVariant("hamster"));
+    map["pets"] = list;
     QVariant value(map);
 
+
     bool ok;
-    qDebug() << QTNetString::dump(value, ok) << "\n";
+    QByteArray tns = QTNetString::dump(value, ok);
+    qDebug() << tns << "\n";
     if (!ok) {
-        qDebug() << "NOT OK\n";
+        qDebug() << "DUMP NOT OK\n";
+    }
+    else {
+        
+        qDebug() << QTNetString::parse(tns, ok);
+        if (!ok) {
+            qDebug() << "DUMP NOT OK\n";
+        }
+
     }
 
     a.exit();
-//    return a.exec();
 }
