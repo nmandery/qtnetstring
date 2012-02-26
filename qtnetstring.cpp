@@ -202,7 +202,8 @@ dump_list(const QVariant &value, QByteArray & tns_value, TnsType & tns_type, boo
  * and give it a string represantation in the tnetstring
  */
 inline void
-dump_unknown(const QVariant &value, QByteArray & tns_value, TnsType & tns_type, bool &ok)
+dump_unknown(const QVariant &value, QByteArray & tns_value, TnsType & tns_type,
+            bool &ok)
 {
     if (value.canConvert(QVariant::String) && !value.canConvert(QVariant::ByteArray)) {
         QString str_value = value.toString();
@@ -285,7 +286,8 @@ parse_bool(const QByteArray &payload, QVariant &value, int pl_start, int pl_size
  * TODO: cast into QVariant of appropriate size
  */
 inline void
-parse_int(const QByteArray &payload, QVariant &value, int pl_start, int pl_size, bool & ok)
+parse_int(const QByteArray &payload, QVariant &value, int pl_start, int pl_size,
+            bool & ok)
 {
     QByteArray pl_data = payload.mid(pl_start, pl_size);
     value.setValue(pl_data.toInt(&ok));
@@ -303,7 +305,8 @@ parse_string(const QByteArray &payload, QVariant &value, int pl_start, int pl_si
 
 
 inline void
-parse_float(const QByteArray &payload, QVariant &value, int pl_start, int pl_size, bool & ok)
+parse_float(const QByteArray &payload, QVariant &value, int pl_start, int pl_size,
+            bool & ok)
 {
     QByteArray pl_data = payload.mid(pl_start, pl_size);
     value.setValue(pl_data.toDouble(&ok));
@@ -312,11 +315,13 @@ parse_float(const QByteArray &payload, QVariant &value, int pl_start, int pl_siz
     }
 }
 
+
 /**
  * parse the contents of a list
  */
 inline void
-parse_list(const QByteArray &payload, QVariant &value, int pl_start, int pl_size, bool & ok)
+parse_list(const QByteArray &payload, QVariant &value, int pl_start, int pl_size,
+            bool & ok)
 {
     QList<QVariant> list;
 
@@ -343,11 +348,13 @@ parse_list(const QByteArray &payload, QVariant &value, int pl_start, int pl_size
     }
 }
 
+
 /**
  * parse the contents of a map
  */
 inline void
-parse_map(const QByteArray &payload, QVariant &value, int pl_start, int pl_size, bool & ok)
+parse_map(const QByteArray &payload, QVariant &value, int pl_start, int pl_size,
+            bool & ok)
 {
     QMap<QString, QVariant> map;
 
@@ -395,7 +402,8 @@ parse_map(const QByteArray &payload, QVariant &value, int pl_start, int pl_size,
  * tns_end_pos: position of the last character belonging to the tns structure
  */
 QVariant
-parse_payload(const QByteArray &payload, int sub_start_pos, int sub_end_pos, int &tns_end_pos, bool &ok)
+parse_payload(const QByteArray &payload, int sub_start_pos, int sub_end_pos,
+            int &tns_end_pos, bool &ok)
 {
     QVariant value;
 
@@ -471,13 +479,15 @@ parse_payload(const QByteArray &payload, int sub_start_pos, int sub_end_pos, int
 
 
 QVariant
-QTNetString::parse(const QByteArray &tnetstring, int tns_start_pos, int &tns_end_pos, bool &ok)
+QTNetString::parse(const QByteArray &tnetstring, int tns_start_pos,
+            int &tns_end_pos, bool &ok)
 {
     QVariant value;
     ok = true;
 
     if (tnetstring.size() > (tns_start_pos + 1)) {
-        value = parse_payload(tnetstring, tns_start_pos, tnetstring.size() - 1, tns_end_pos, ok);
+        value = parse_payload(tnetstring, tns_start_pos, tnetstring.size() - 1,
+                tns_end_pos, ok);
 
         // reset to empty QVariant in case of an error to
         // return type Invalid
@@ -501,4 +511,3 @@ QTNetString::parse(const QByteArray &tnetstring, bool &ok)
 
     return parse(tnetstring, 0, tns_end_pos, ok);
 }
-
