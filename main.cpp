@@ -38,12 +38,16 @@ int main(int argc, char *argv[])
 
     bool ok;
     QByteArray tns = QTNetString::dump(value, ok);
-    qDebug() << tns << "\n";
     if (!ok) {
         qDebug() << "DUMP NOT OK\n";
     }
     else {
-        
+        // add a few extra characters after the end of the tns
+        // the parser should ignore this characters
+        tns.append("Ignore this !!!");
+
+        qDebug() << tns << "\n";
+
         qDebug() << QTNetString::parse(tns, ok);
         if (!ok) {
             qDebug() << "DUMP NOT OK\n";

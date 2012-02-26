@@ -36,6 +36,20 @@ namespace QTNetString {
      * to false.
      */
     QVariant parse(const QByteArray &tnetstring, bool &ok);
+
+    /**
+     * the same as the parse method with the difference
+     * that pasinf starts at tns_start_pos and all characters
+     * before this position are ignored.
+     *
+     * Parsing will continue until either the end of the tns structure
+     * or the end of the tnetstring is reached.
+     *
+     * the position of the last character of the tns will be written
+     * to the tns_end_pos parameter
+     */
+    QVariant parse(const QByteArray &tnetstring, int tns_start_pos, int &tns_end_pos, bool &ok);
+
 }
 
 

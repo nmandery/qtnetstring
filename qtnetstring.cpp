@@ -84,12 +84,12 @@
 using namespace QTNetString;
 
 /* neccessary prototypes */
-QVariant parse_payload(const QByteArray &payload, int start_pos, int end_pos,
-            int &this_end_pos, bool &ok);
+QVariant parse_payload(const QByteArray &payload, int sub_start_pos, int sub_end_pos,
+            int &tns_end_pos, bool &ok);
 
 enum TnsType {
     TNS_BOOL        = '!',
-    TNS_MAP        = '}',
+    TNS_MAP         = '}',
     TNS_FLOAT       = '^',
     TNS_INT         = '#',
     TNS_LIST        = ']',
@@ -326,10 +326,10 @@ parse_list(const QByteArray &payload, QVariant &value, int pl_start, int pl_size
         return;
     }
 
-    int this_end_pos = pl_start;
-    while (ok && (this_end_pos < (pl_start+pl_size-1))) {
-        QVariant list_value = parse_payload(payload, this_end_pos, pl_size+pl_start-1,
-                    this_end_pos, ok);
+    int tns_end_pos = pl_start;
+    while (ok && (tns_end_pos < (pl_start+pl_size-1))) {
+        QVariant list_value = parse_payload(payload, tns_end_pos, pl_size+pl_start-1,
+                    tns_end_pos, ok);
 
         if (!ok) {
             qDebug() << "list element is not ok";
@@ -357,11 +357,11 @@ parse_map(const QByteArray &payload, QVariant &value, int pl_start, int pl_size,
         return;
     }
 
-    int this_end_pos = pl_start;
+    int tns_end_pos = pl_start;
 
-    while (ok && (this_end_pos < (pl_start+pl_size-1))) {
-        QVariant map_key = parse_payload(payload, this_end_pos, pl_size+pl_start-1,
-                this_end_pos, ok);
+    while (ok && (tns_end_pos < (pl_start+pl_size-1))) {
+        QVariant map_key = parse_payload(payload, tns_end_pos, pl_size+pl_start-1,
+                tns_end_pos, ok);
         if (!ok) {
             break;
         }
@@ -372,8 +372,8 @@ parse_map(const QByteArray &payload, QVariant &value, int pl_start, int pl_size,
             break;
         }
 
-        QVariant map_value = parse_payload(payload, this_end_pos,
-                pl_size+pl_start-1, this_end_pos, ok);
+        QVariant map_value = parse_payload(payload, tns_end_pos,
+                pl_size+pl_start-1, tns_end_pos, ok);
         if (!ok) {
             break;
         }
@@ -389,11 +389,13 @@ parse_map(const QByteArray &payload, QVariant &value, int pl_start, int pl_size,
 }
 
 /**
- *
- * this_end_pos: last position of this value (= position of tns_type character)
+ * sub_start_pos: the beginning of the fragment of the bytearray where the parser
+ *          should start.
+ * sub_end_pos: the end of the fragement. The parser will stop at this position
+ * tns_end_pos: position of the last character belonging to the tns structure
  */
 QVariant
-parse_payload(const QByteArray &payload, int start_pos, int end_pos, int &this_end_pos, bool &ok)
+parse_payload(const QByteArray &payload, int sub_start_pos, int sub_end_pos, int &tns_end_pos, bool &ok)
 {
     QVariant value;
 
@@ -403,31 +405,31 @@ parse_payload(const QByteArray &payload, int start_pos, int end_pos, int &this_e
         return value;
     }
 
-    if ((start_pos > end_pos) || ((payload.size()-1) < end_pos)) {
+    if ((sub_start_pos > sub_end_pos) || ((payload.size()-1) < sub_end_pos)) {
         qDebug() << "invalid positions/sizes";
         ok = false;
         return value;
     }
 
-    int colon_pos = payload.indexOf(':', start_pos);
-    if ((colon_pos == -1) || (colon_pos > end_pos)) {
+    int colon_pos = payload.indexOf(':', sub_start_pos);
+    if ((colon_pos == -1) || (colon_pos > sub_end_pos)) {
         qDebug() << "no seperating colon found";
         ok = false;
         return value;
     }
 
     // convert the size to int;
-    QByteArray ba_size = payload.mid(start_pos, colon_pos-start_pos);
+    QByteArray ba_size = payload.mid(sub_start_pos, colon_pos-sub_start_pos);
     int pl_size = ba_size.toInt(&ok);
     if (!ok) {
-        qDebug() << "invalid tns size: " <<ba_size;
+        qDebug() << "invalid tns size: " << ba_size;
         ok = false;
         return value;
     }
 
     int pl_start = colon_pos + 1;
     int pl_end = pl_start + pl_size - 1;
-    if (pl_end >= end_pos) {
+    if (pl_end >= sub_end_pos) {
         qDebug() << "tns specifies no type";
         ok = false;
         return value;
@@ -463,21 +465,19 @@ parse_payload(const QByteArray &payload, int start_pos, int end_pos, int &this_e
             ok = false;
     }
 
-    // last position of this value ( = tns_type character)
-    this_end_pos = pl_start + pl_size + 1;
+    tns_end_pos = pl_start + pl_size + 1;
     return value;
 }
 
 
 QVariant
-QTNetString::parse(const QByteArray &tnetstring, bool &ok)
+QTNetString::parse(const QByteArray &tnetstring, int tns_start_pos, int &tns_end_pos, bool &ok)
 {
     QVariant value;
     ok = true;
 
-    if (tnetstring.size() > 0) {
-        int this_end_pos;
-        value = parse_payload(tnetstring, 0, tnetstring.size() - 1, this_end_pos, ok);
+    if (tnetstring.size() > (tns_start_pos + 1)) {
+        value = parse_payload(tnetstring, tns_start_pos, tnetstring.size() - 1, tns_end_pos, ok);
 
         // reset to empty QVariant in case of an error to
         // return type Invalid
@@ -486,9 +486,19 @@ QTNetString::parse(const QByteArray &tnetstring, bool &ok)
         }
     }
     else {
-        qDebug() << "tns is empty";
+        qDebug() << "bytearray empty or to few characters";
         ok = false;
     }
 
     return value;
 }
+
+
+QVariant
+QTNetString::parse(const QByteArray &tnetstring, bool &ok)
+{
+    int tns_end_pos;
+
+    return parse(tnetstring, 0, tns_end_pos, ok);
+}
+
