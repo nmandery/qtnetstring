@@ -1,0 +1,4 @@
+/Makefile
+*.o
+/qtnetstring
+*.pro.user
