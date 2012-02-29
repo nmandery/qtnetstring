@@ -16,7 +16,7 @@ TEMPLATE = app
 
 
 SOURCES += main.cpp \
-    qtnetstring.cpp
+    QTNetString.cpp
 
 HEADERS += \
-    qtnetstring.h
+    QTNetString.h

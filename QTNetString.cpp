@@ -1,5 +1,4 @@
-
-#include "qtnetstring.h"
+#include "QTNetString.h"
 
 #include <QMap>
 #include <QList>

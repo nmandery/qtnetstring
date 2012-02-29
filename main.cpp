@@ -7,7 +7,7 @@
 
 
 #include <QDateTime>
-#include "qtnetstring.h"
+#include "QTNetString.h"
 
 
 int main(int argc, char *argv[])
